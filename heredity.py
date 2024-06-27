@@ -128,6 +128,21 @@ def powerset(s):
     ]
 
 
+def getGeneCount(name, one_gene, two_genes):
+    """
+    Compute how many genes a person has given their name
+    everyone in set `one_gene` has one copy of the gene
+    everyone in set `two_genes` has two copies of the gene
+    everyone not in one_gene or two_gene has 0 copy of the gene
+    """
+    if name in one_gene:
+        return 1
+    elif name in two_genes:
+        return 2
+
+    return 0
+
+
 def joint_probability(people, one_gene, two_genes, have_trait):
     """
     Compute and return a joint probability.
@@ -139,7 +154,52 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone in set `have_trait` has the trait, and
         * everyone not in set` have_trait` does not have the trait.
     """
-    raise NotImplementedError
+    jointProbabilities = None
+
+    for name in people:
+        genePropability = 0
+        traitProbability = 0
+        jointProbability = 0
+
+        person = people[name]
+        hasMother = person["mother"] is not None
+        hasFather = person["father"] is not None
+        hasParent = hasMother or hasFather
+
+        geneCount = getGeneCount(name, one_gene, two_genes)
+
+        if not hasParent:
+            genePropability = PROBS["gene"][geneCount]
+        else:
+            motherGeneCount = getGeneCount(person["mother"], one_gene, two_genes)
+            fatherGeneCount = getGeneCount(person["father"], one_gene, two_genes)
+
+            motherPassProba = PROBS["mutation"] if motherGeneCount == 0 else 0.5 if motherGeneCount == 1 else (1 - PROBS["mutation"])
+            fatherPassProba = PROBS["mutation"] if fatherGeneCount == 0 else 0.5 if fatherGeneCount == 1 else (1 - PROBS["mutation"])
+
+            if (geneCount == 0):
+                # Calculate the chance of the gene not passing
+                genePropability = (1 - fatherPassProba) * (1 - motherPassProba)
+            elif geneCount == 1:
+                # Calculate the chance that only one copy is passed
+                genePropability = (motherPassProba * (1 - fatherPassProba)) + (fatherPassProba * (1 - motherPassProba))
+            elif geneCount == 2:
+                # Calculate the change that both parents passed a copy
+                genePropability = motherPassProba * fatherPassProba
+
+        if name not in have_trait:
+            traitProbability = PROBS["trait"][geneCount][False]
+        else:
+            traitProbability = PROBS["trait"][geneCount][True]
+
+        jointProbability = genePropability * traitProbability
+
+        if jointProbabilities is None:
+            jointProbabilities = jointProbability
+        else:
+            jointProbabilities *= jointProbability
+
+    return jointProbabilities
 
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
