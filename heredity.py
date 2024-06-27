@@ -209,7 +209,15 @@ def update(probabilities, one_gene, two_genes, have_trait, p):
     Which value for each distribution is updated depends on whether
     the person is in `have_gene` and `have_trait`, respectively.
     """
-    raise NotImplementedError
+    for name in probabilities:
+        geneCount = getGeneCount(name, one_gene, two_genes)
+
+        probabilities[name]["gene"][geneCount] += p
+
+        if name in have_trait:
+            probabilities[name]["trait"][True] += p
+        else:
+            probabilities[name]["trait"][False] += p
 
 
 def normalize(probabilities):
